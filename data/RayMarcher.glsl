@@ -4,7 +4,7 @@ precision mediump float;
 
 #define PROCESSING_COLOR_SHADER
 
-const int maxSteps = 1000;
+const int maxSteps = 5000;
 const float eps = 0.0001; // a small epsilon to determine a hit and other nudges
 
 uniform vec2 resolution; // resolution of the canvas
@@ -64,6 +64,13 @@ float sub(float a, float b) {
 }
 
 // pos is the ray poisition
+// support is the support point of the plane
+// dir is the normal of the plane
+float plane(vec3 pos, vec3 support, vec3 dir) {
+    return dot(pos - support, dir);
+}
+
+// pos is the ray poisition
 // center is the sphere position
 float sphere(vec3 pos, vec3 center, float radius) {
     return length(pos - center) - radius;
@@ -74,11 +81,18 @@ float floorDist(vec3 pos) {
 }
 
 float dist(vec3 pos) {
-    return or(
+    return or(or(or(
         floorDist(pos),
         sub(
             sphere(pos, vec3(0.), 0.5), 
             sphere(pos, vec3(0., 0., -.5), 0.5)
+        )
+    ),
+        sphere(pos, vec3(0., 0., -.5), 0.45)
+    ),
+        and(
+            plane(pos, vec3(.6, 0., 0.), vec3(-1., 0., 0.)),
+            sphere(pos, vec3(.6, 0., 0.), 1)
         )
     );
 }
@@ -93,16 +107,32 @@ vec3 calcNormal(vec3 pos) {
     ));
 }
 
+
 vec3 getColor(vec3 pos) {
     float closestDist = floorDist(pos);
     vec3 color = mod(floor(pos.x) + floor(pos.z), 2) * vec3(1.);
+
     float currentDist = sub(
         sphere(pos, vec3(0.), 0.5), 
         sphere(pos, vec3(0., 0., -.5), 0.5)
     );
     bool isCloser = currentDist < closestDist;
-    color = mix(color, vec3(0.9, 0., 0.), float(isCloser));
+    color = mix(color, vec3(0.9, 0.3, 0.3), float(isCloser));
     closestDist = mix(closestDist, currentDist, float(isCloser));
+
+    currentDist = sphere(pos, vec3(0., 0., -.5), 0.45);
+    isCloser = currentDist < closestDist;
+    color = mix(color, vec3(0.3, 0.9, 0.3), float(isCloser));
+    closestDist = mix(closestDist, currentDist, float(isCloser));
+
+    currentDist = and(
+        plane(pos, vec3(.6, 0., 0.), vec3(-1., 0., 0.)),
+        sphere(pos, vec3(.6, 0., 0.), 1)
+    );
+    isCloser = currentDist < closestDist;
+    color = mix(color, vec3(0.9, 0.7, 0.3), float(isCloser));
+    closestDist = mix(closestDist, currentDist, float(isCloser));
+
     return color;
 }
 
@@ -123,10 +153,10 @@ vec3 trace(vec3 pos, vec3 dir) {
 
         skyCond = (i >= maxSteps || totalDist >= viewDistance);
 
-        if (stepDist < eps && pos.y > -1.) {
+        if (stepDist < eps && pos.y > floorHeight + 2*eps) {
             dir = reflect(dir, calcNormal(pos));
             tint *= getColor(pos);
-            stepDist = eps;
+            stepDist = eps*2;
         }
     }
 
