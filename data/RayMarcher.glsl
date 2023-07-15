@@ -153,7 +153,7 @@ vec3 trace(vec3 pos, vec3 dir) {
 
         skyCond = (i >= maxSteps || totalDist >= viewDistance);
 
-        if (stepDist < eps && pos.y > floorHeight + 2*eps) {
+        if (stepDist < eps){// && pos.y > floorHeight + 2*eps) {
             dir = reflect(dir, calcNormal(pos));
             tint *= getColor(pos);
             stepDist = eps*2;

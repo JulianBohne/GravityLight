@@ -3,6 +3,7 @@ boolean pmousePressed = false;
 
 // Roation speed of the camera ig
 final float degreesPerWidth = 180.0;
+final int fovChangeSensitivity = 10; // Changes by how much the fov changes when zooming with the scroll wheel
 
 RayMarcher marcher;
 
@@ -24,7 +25,12 @@ void draw(){
   rotateY(marcher.viewPos, marcher.yaw);
   marcher.viewPos.y = max(marcher.viewPos.y, -1);
   
-  marcher.render();
+  marcher.render();  
+  
+  fill(0, 255, 0);
+  textSize(50);
+  textAlign(LEFT, TOP);
+  text((int)frameRate, 20, 10);
   
   // Just a amall fix for touch screens
   pmousePressed = mousePressed;
@@ -36,4 +42,11 @@ void keyPressed() {
     println("Reloading renderer... (" + (++numShaderReloaded) + ")");
     marcher.reloadRenderer();
   }
+}
+
+void mouseWheel(MouseEvent e) {
+  marcher.fov += radians(fovChangeSensitivity) * e.getCount();
+  marcher.fov = radians(round(degrees(marcher.fov) / fovChangeSensitivity) * fovChangeSensitivity); // Snap fov to the nearest n degrees
+  marcher.fov = constrain(marcher.fov, radians(1), radians(179));
+  println("Current FOV: " + round(degrees(marcher.fov)));
 }
