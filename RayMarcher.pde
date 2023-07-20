@@ -1,7 +1,15 @@
 
-class RayMarcher {
+public class RayMarcher {
+  
+  private int ppixelScalingFactor;
+  int pixelScalingFactor = 5;
+  
+  private PGraphics canvas;
+  private PImage bilinearFilterWorkaround;
   private PShader renderer;
   private PShader errorShader;
+  
+  private int pwidth, pheight;
 
   float fov = radians(90);
   float pitch = 0;
@@ -9,8 +17,35 @@ class RayMarcher {
   PVector viewPos = new PVector(0, 0, -2);
 
   RayMarcher() {
-    reloadRenderer();
     errorShader = loadShader("Error.glsl");
+    reloadRenderer();
+    initializeGraphics();
+    
+    ppixelScalingFactor = pixelScalingFactor;
+    
+    // Detecting window resize
+    pwidth = width;
+    pheight = height;
+    registerMethod("pre", this);
+  }
+  
+  void setPixelScalingFactor(int factor) {
+    pixelScalingFactor = factor;
+    initializeGraphics();
+  }
+  
+  void initializeGraphics() {
+    canvas = createGraphics(width/pixelScalingFactor, height/pixelScalingFactor, P2D);
+    bilinearFilterWorkaround = createImage(canvas.width, canvas.height, ARGB);
+  }
+  
+  void pre() {
+    if (pwidth != width || pheight != height || ppixelScalingFactor != pixelScalingFactor) {
+      pwidth = width;
+      pheight = height;
+      ppixelScalingFactor = pixelScalingFactor;
+      initializeGraphics();
+    }
   }
 
   void reloadRenderer() {
@@ -18,19 +53,28 @@ class RayMarcher {
   }
 
   void render() {
-    renderer.set("resolution", (float)width, (float)height);
-    renderer.set("fov", fov);
-    renderer.set("pitch", pitch);
-    renderer.set("yaw", yaw);
-    renderer.set("viewPos", viewPos);
-    
+    canvas.beginDraw();
     try {
-      shader(renderer);
+      canvas.shader(renderer);
     } catch(RuntimeException e){
       println(e.toString());
-      shader(errorShader);
+      canvas.shader(errorShader);
+      renderer = errorShader;
     }
-    rect(0, 0, width, height);
-    resetShader();
+    if(renderer != errorShader){
+      
+      renderer.set("resolution", (float)canvas.width, (float)canvas.height);
+      renderer.set("fov", fov);
+      renderer.set("pitch", pitch);
+      renderer.set("yaw", yaw);
+      renderer.set("viewPos", viewPos);
+      
+    }
+    
+    canvas.rect(0, 0, canvas.width, canvas.height);
+    canvas.endDraw();
+    // Yuck
+    bilinearFilterWorkaround.copy(canvas, 0, 0, canvas.width, canvas.height, 0, 0, bilinearFilterWorkaround.width, bilinearFilterWorkaround.height);
+    image(bilinearFilterWorkaround, 0, 0, width, height);
   }
 }

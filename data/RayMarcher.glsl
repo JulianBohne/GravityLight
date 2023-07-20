@@ -60,7 +60,7 @@ float and(float a, float b) {
 }
 
 float sub(float a, float b) {
-    return -smin(-a, b, 0.10);
+    return -smin(-a, b, 0.2);
 }
 
 // pos is the ray poisition
@@ -81,23 +81,34 @@ float floorDist(vec3 pos) {
 }
 
 float dist(vec3 pos) {
-    return or(or(or(
+    return or(or(or(or(or(
         floorDist(pos),
         sub(
             sphere(pos, vec3(0.), 0.5), 
-            sphere(pos, vec3(0., 0., -.5), 0.5)
+            sphere(pos, vec3(0., 0., -.4), 0.4)
         )
     ),
-        sphere(pos, vec3(0., 0., -.5), 0.45)
+        sphere(pos, vec3(0., 0., -.5), 0.15)
     ),
         and(
-            plane(pos, vec3(.6, 0., 0.), vec3(-1., 0., 0.)),
-            sphere(pos, vec3(.6, 0., 0.), 1)
+            plane(pos, vec3(1., 0., 1.), vec3(-1., 0., 0.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
+        )
+    ),
+        and(
+            plane(pos, vec3(1., 0., 1.), vec3(0., 1., 0.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
+        )
+    ),
+        and(
+            plane(pos, vec3(1., 0., 1.), vec3(0., 0., -1.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
         )
     );
 }
 
 // https://iquilezles.org/articles/normalsSDF/
+// This is just the simple version because I want to understand the more complicated one before applying it
 vec3 calcNormal(vec3 pos) {
     const vec2 h = vec2(eps, 0);
     return normalize(vec3(
@@ -114,20 +125,31 @@ vec3 getColor(vec3 pos) {
 
     float currentDist = sub(
         sphere(pos, vec3(0.), 0.5), 
-        sphere(pos, vec3(0., 0., -.5), 0.5)
+        sphere(pos, vec3(0., 0., -.4), 0.4)
     );
     bool isCloser = currentDist < closestDist;
     color = mix(color, vec3(0.9, 0.3, 0.3), float(isCloser));
     closestDist = mix(closestDist, currentDist, float(isCloser));
 
-    currentDist = sphere(pos, vec3(0., 0., -.5), 0.45);
+    currentDist = sphere(pos, vec3(0., 0., -.5), 0.15);
     isCloser = currentDist < closestDist;
     color = mix(color, vec3(0.3, 0.9, 0.3), float(isCloser));
     closestDist = mix(closestDist, currentDist, float(isCloser));
 
-    currentDist = and(
-        plane(pos, vec3(.6, 0., 0.), vec3(-1., 0., 0.)),
-        sphere(pos, vec3(.6, 0., 0.), 1)
+    currentDist = or(or(
+        and(
+            plane(pos, vec3(1., 0., 1.), vec3(-1., 0., 0.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
+        ),
+        and(
+            plane(pos, vec3(1., 0., 1.), vec3(0., 1., 0.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
+        )
+    ),
+        and(
+            plane(pos, vec3(1., 0., 1.), vec3(0., 0., -1.)),
+            sphere(pos, vec3(1., 0., 1.), 1)
+        )
     );
     isCloser = currentDist < closestDist;
     color = mix(color, vec3(0.9, 0.7, 0.3), float(isCloser));
@@ -145,6 +167,7 @@ vec3 trace(vec3 pos, vec3 dir) {
     vec3 tint = vec3(1.);
 
     while(!skyCond && stepDist >= eps) {
+        dir += vec3(0., -0.05, 0.) * stepDist;
         pos += dir * stepDist;
         
         totalDist += stepDist;
@@ -153,7 +176,7 @@ vec3 trace(vec3 pos, vec3 dir) {
 
         skyCond = (i >= maxSteps || totalDist >= viewDistance);
 
-        if (stepDist < eps){// && pos.y > floorHeight + 2*eps) {
+        if (stepDist < eps && pos.y > floorHeight + 2*eps) {
             dir = reflect(dir, calcNormal(pos));
             tint *= getColor(pos);
             stepDist = eps*2;

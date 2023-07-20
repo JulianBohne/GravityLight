@@ -9,6 +9,7 @@ RayMarcher marcher;
 
 void setup(){
   size(800, 600, P2D);
+  ((PGraphicsOpenGL)g).textureSampling(2);
   surface.setResizable(true);
   marcher = new RayMarcher();
 }
@@ -41,6 +42,13 @@ void keyPressed() {
   if (key == 'r') {
     println("Reloading renderer... (" + (++numShaderReloaded) + ")");
     marcher.reloadRenderer();
+  } else if (key == '+') {
+    marcher.pixelScalingFactor += 1;
+    println("Pixel scale is now: " + marcher.pixelScalingFactor);
+  } else if (key == '-') {
+    marcher.pixelScalingFactor -= 1;
+    if (marcher.pixelScalingFactor < 1) marcher.pixelScalingFactor = 1;
+    println("Pixel scale is now: " + marcher.pixelScalingFactor);
   }
 }
 
