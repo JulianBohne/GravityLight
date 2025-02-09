@@ -15,6 +15,7 @@ public class RayMarcher {
   float pitch = 0;
   float yaw = 0;
   PVector viewPos = new PVector(0, 0, -2);
+  PVector gravity = new PVector(0, -0.05, 0);
 
   RayMarcher() {
     errorShader = loadShader("Error.glsl");
@@ -68,6 +69,7 @@ public class RayMarcher {
       renderer.set("pitch", pitch);
       renderer.set("yaw", yaw);
       renderer.set("viewPos", viewPos);
+      renderer.set("gravity", gravity);
       
     }
     

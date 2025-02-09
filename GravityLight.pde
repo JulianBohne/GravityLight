@@ -15,6 +15,22 @@ void setup(){
 }
 
 void draw(){
+  
+  float step = 0.001;
+  if (keyPressed) {
+    if (key == '1') marcher.gravity.x -= step;
+    else if (key == '4') marcher.gravity.x = 0;
+    else if (key == '7') marcher.gravity.x += step;
+    else if (key == '2') marcher.gravity.y -= step;
+    else if (key == '5') marcher.gravity.y = 0;
+    else if (key == '8') marcher.gravity.y += step;
+    else if (key == '3') marcher.gravity.z -= step;
+    else if (key == '6') marcher.gravity.z = 0;
+    else if (key == '9') marcher.gravity.z += step;
+    println(marcher.gravity);
+  }
+  
+  
   if(mousePressed && pmousePressed) {
     marcher.yaw -= radians((pmouseX-mouseX)*degreesPerWidth/width);
     marcher.pitch -= radians((pmouseY-mouseY)*degreesPerWidth/width);

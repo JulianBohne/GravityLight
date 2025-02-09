@@ -5,7 +5,7 @@ precision mediump float;
 #define PROCESSING_COLOR_SHADER
 
 const int maxSteps = 5000;
-const float eps = 0.0001; // a small epsilon to determine a hit and other nudges
+const float eps = 0.001; // a small epsilon to determine a hit and other nudges
 
 uniform vec2 resolution; // resolution of the canvas
 uniform float fov; // field of view
@@ -19,6 +19,10 @@ uniform vec3 viewPos = vec3(0., 0., -2.);
 uniform vec3 skyColor = vec3(0.5, 0.7, 1);
 
 uniform float floorHeight = -1.5;
+
+uniform vec3 gravity = vec3(0.0, 0.0, 0.0);
+
+uniform vec3 blackHolePos = vec3(0.5, 0.0, -0.5);
 
 vec3 screenPosToDirection(vec2 pos) {
     float dist = 1./tan(fov/2);
@@ -160,30 +164,39 @@ vec3 getColor(vec3 pos) {
 
 vec3 trace(vec3 pos, vec3 dir) {
     bool skyCond = false; // did we reach the sky yet?
+
     int i = 0; // iteration count
     float stepDist = dist(pos);
     float totalDist = 0.;
 
+    vec3 vel = dir; // velocity of the ray
+
     vec3 tint = vec3(1.);
 
     while(!skyCond && stepDist >= eps) {
-        dir += vec3(0., -0.05, 0.) * stepDist;
+        dir += gravity * stepDist;
+
+        // vec3 blackHoleDir = blackHolePos - pos;
+        // dir += stepDist*normalize(blackHoleDir)*0.1 / dot(blackHoleDir, blackHoleDir);
+
+        // dir = normalize(vel);
         pos += dir * stepDist;
         
-        totalDist += stepDist;
+        totalDist += abs(stepDist);
         stepDist = dist(pos);
         i ++;
 
         skyCond = (i >= maxSteps || totalDist >= viewDistance);
 
-        if (stepDist < eps && pos.y > floorHeight + 2*eps) {
+        if (abs(stepDist) < eps && pos.y > floorHeight + 2*eps) {
             dir = reflect(dir, calcNormal(pos));
             tint *= getColor(pos);
-            stepDist = eps*2;
+            stepDist = eps*5;
         }
     }
 
-    return tint * (mix(getColor(pos), skyColor, easeOutCubic(totalDist/viewDistance)) * float(!skyCond) + skyColor * float(skyCond));
+    // return ((getColor(pos) * float(!skyCond)) + (skyColor * float(skyCond)));
+    return tint * (mix(getColor(pos), skyColor, easeOutCubic(totalDist/viewDistance)) * float(!skyCond) + skyColor * float(skyCond) * float(dot(pos, pos) > 10.0));
 }
 
 void main(void) {
